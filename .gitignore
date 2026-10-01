@@ -1,0 +1,24 @@
+# Build output
+bin/
+obj/
+publish/
+_publish/
+*.exe
+*.pdb
+
+# Captures may contain real MAC addresses
+powerline-sniff*.txt
+*.pcap
+*.pcapng
+
+# IDE / OS
+.vs/
+.vscode/
+*.user
+*.suo
+Thumbs.db
+desktop.ini
+.claude/
+
+# Transfer archive
+*.tar.gz
