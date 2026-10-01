@@ -7,6 +7,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{5E73E37D-E82
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PowerlineTool", "src\PowerlineTool\PowerlineTool.csproj", "{9C8626C3-1B96-48BC-BB0C-C285BEB89420}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PowerlineTool.Core", "src\PowerlineTool.Core\PowerlineTool.Core.csproj", "{13E606D3-A5BB-4A23-805C-4E6F53B2AD3F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{2105DBFD-7758-4E9C-BACF-2048B642291B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PowerlineTool.Tests", "tests\PowerlineTool.Tests\PowerlineTool.Tests.csproj", "{3E7847C7-59F8-4955-A953-8E6C765D6B77}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,8 +26,18 @@ Global
 		{9C8626C3-1B96-48BC-BB0C-C285BEB89420}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9C8626C3-1B96-48BC-BB0C-C285BEB89420}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9C8626C3-1B96-48BC-BB0C-C285BEB89420}.Release|Any CPU.Build.0 = Release|Any CPU
+		{13E606D3-A5BB-4A23-805C-4E6F53B2AD3F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{13E606D3-A5BB-4A23-805C-4E6F53B2AD3F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{13E606D3-A5BB-4A23-805C-4E6F53B2AD3F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{13E606D3-A5BB-4A23-805C-4E6F53B2AD3F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3E7847C7-59F8-4955-A953-8E6C765D6B77}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3E7847C7-59F8-4955-A953-8E6C765D6B77}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3E7847C7-59F8-4955-A953-8E6C765D6B77}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3E7847C7-59F8-4955-A953-8E6C765D6B77}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{9C8626C3-1B96-48BC-BB0C-C285BEB89420} = {5E73E37D-E82A-40F2-A352-95A0D9D3B22E}
+		{13E606D3-A5BB-4A23-805C-4E6F53B2AD3F} = {5E73E37D-E82A-40F2-A352-95A0D9D3B22E}
+		{3E7847C7-59F8-4955-A953-8E6C765D6B77} = {2105DBFD-7758-4E9C-BACF-2048B642291B}
 	EndGlobalSection
 EndGlobal

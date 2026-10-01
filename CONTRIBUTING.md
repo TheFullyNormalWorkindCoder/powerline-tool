@@ -8,25 +8,32 @@ Open an issue using the *Adapter report* template and include:
 
 - adapter model and hardware version (printed on the label)
 - what the app showed (a screenshot is great), and what the vendor's own utility showed
-- the **log** (bottom of the window, *Show log*)
+- the **log** (`Ctrl+L`, then press Scan)
 
 ## Add support for a new model
 
-1. Close the vendor utility, start Powerline Tool, click **Capture traffic (diagnostics)**.
+1. Close the vendor utility, start Powerline Tool, click **Capture traffic (diagnostics)** at the bottom right.
 2. Open the vendor utility, let it scan, then stop the capture.
 3. The capture is saved as `powerline-sniff.txt` on the Desktop. **It contains MAC addresses**; replace them with dummy ones if you want to keep them private.
-4. Attach it to an issue, or open a pull request that decodes it in `src/PowerlineTool/Plc.cs` and documents it in `docs/PROTOCOL.md`.
+4. Attach it to an issue, or open a pull request that decodes it in `src/PowerlineTool.Core/` and documents it in `docs/PROTOCOL.md`.
 
 ## Development
 
+Requires the [.NET 8 SDK](https://dotnet.microsoft.com/download) on Windows.
+
 ```powershell
 dotnet build -c Release
+dotnet test  -c Release
 dotnet run --project src/PowerlineTool -- --demo      # UI without hardware
 ```
 
-Guidelines:
+The code layout is described in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+## Guidelines
 
 - Keep the tool **read-only**. Anything that writes to an adapter (passwords, firmware, reset) needs a clear confirmation in the UI and should be discussed in an issue first.
+- Protocol code goes in `PowerlineTool.Core` as small pure functions with a unit test (use a real captured frame with the MAC addresses replaced).
 - Mark anything in `docs/PROTOCOL.md` that is a guess as a guess.
-- User-visible strings go through `L.T("English", "Hrvatski")` in `Program.cs`.
+- User-visible strings go through `L.T("English", "Hrvatski")`.
 - Do not commit captures that contain real MAC addresses.
+- If you change the UI, regenerate the screenshots: `powershell -File tools/make-screenshots.ps1`.
