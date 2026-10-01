@@ -20,6 +20,8 @@ English · [Hrvatski](README.hr.md)
 
 </div>
 
+> **Unofficial project.** This is an independent, community tool. It is **not made, endorsed, supported or affiliated with TP-Link** in any way. "TP-Link" and "tpPLC" are trademarks of their owners and are used here only to say which hardware and which program this tool is compatible with or replaces.
+
 > Every screenshot here uses `--demo` mode (fake devices), so you can try the whole interface without any hardware.
 
 <table>
@@ -69,6 +71,39 @@ tpPLC regularly fails to see adapters that are plugged in and working, gets stuc
 | Qualcomm Atheros (AR7400 / QCA7420 / QCA7500 …) | HomePlug AV `0x88E1` | ⚠️ Implemented from public documentation, **not tested on real hardware** |
 
 Other TP-Link models probably use one of these two families, but that is a guess. If you try it on another adapter, please [open an issue](https://github.com/TheFullyNormalWorkindCoder/powerline-tool/issues/new/choose) and say what happened.
+
+## What has been tested (and what has not)
+
+Everything below was tested by **one person on one PC**. Treat anything not in the first table as unverified.
+
+**Test setup:** Windows 11 Home (build 26300), Npcap 1.89, one pair of **TP-Link TL-PA7017** adapters (Broadcom, firmware id `tpver_701E14_190426_901`), the PC connected to the local adapter through a 100 Mbps unmanaged switch.
+
+| Verified on the real hardware above | |
+|---|---|
+| Finding the local and the remote adapter, reading firmware id | ✅ |
+| TX / RX link speeds | ✅ matched tpPLC within the normal fluctuation (about 210 in tpPLC vs 212 and 223 in this tool, read at different moments) |
+| Device cards, light and dark theme following Windows | ✅ |
+| Names from version 1.0 imported automatically | ✅ |
+| The app built from this source starts and scans | ✅ (the normal `dotnet build` output was used for the live scan) |
+| The single-file `.exe` | only launched in `--demo` mode locally; the downloadable release was built by GitHub Actions and has not been run by the author |
+
+| Tested only with fake data (`--demo`) or unit tests | |
+|---|---|
+| Map and history views | demo data only |
+| Change detection (device lost, link drop, recovery), history store, settings file, CSV history format | unit tests (52), using frames and values modelled on the capture, not live traffic |
+
+| **Not tested** | |
+|---|---|
+| Qualcomm Atheros adapters (the `0x88E1` code path) | never run against real hardware |
+| Any adapter model other than the TL-PA7017; more than two adapters on a real network | not tested |
+| Windows 10, ARM64, other display scaling, other Npcap versions | not tested |
+| Wi-Fi adapters | skipped by design; not tested |
+| Tray notifications, minimise to tray, start with Windows, single-instance wake-up | not tested |
+| Export buttons (CSV / JSON / copy summary), settings dialog end to end, *Check for updates* against the live GitHub API | not tested manually |
+| Croatian interface in version 1.1 | translated, but not reviewed on screen |
+| *Capture traffic* in version 1.1 | worked in 1.0; not re-tested after the rewrite |
+
+Found something that behaves differently? Please [open an issue](https://github.com/TheFullyNormalWorkindCoder/powerline-tool/issues/new/choose).
 
 ## Install
 
@@ -141,6 +176,15 @@ The adapters answer a handful of management messages sent as raw Ethernet frames
 - Speeds are shown as the adapter reports them (`value & 0x3FFF`). They matched tpPLC (about 210 Mbps vs 212) on the tested pair, but the meaning of the high bits is a guess.
 - No firmware update, password change, LED, restart or power-saving control. Those commands have not been captured, and the tool is deliberately read-only.
 - The Qualcomm code path has never run against a real adapter.
+
+## Third-party components
+
+| Component | Licence | Notes |
+|---|---|---|
+| [SharpPcap](https://github.com/chmorgan/sharppcap) 6.3.0 | MIT | Raw packet access |
+| [PacketDotNet](https://github.com/dotpcap/packetnet) 1.4.7 | MPL-2.0 | Pulled in by SharpPcap; used **unmodified**, its source is at the link |
+| .NET 8 runtime | MIT | Bundled inside the single-file `.exe` |
+| [Npcap](https://npcap.com) | Npcap licence | **Not** bundled; you install it yourself |
 
 ## Contributing
 

@@ -27,13 +27,13 @@ public class ModelTests
 
     [Fact]
     public void DefaultName_uses_the_last_two_bytes_like_tpPLC() =>
-        Assert.Equal("Device_f5e2", MacUtil.DefaultName("0C:EF:15:69:F5:E2"));
+        Assert.Equal("Device_f5e2", MacUtil.DefaultName("AA:BB:CC:00:F5:E2"));
 
     [Fact]
     public void Mac_roundtrips()
     {
-        var bytes = MacUtil.Parse("0C:EF:15:69:F5:E2");
-        Assert.Equal("0C:EF:15:69:F5:E2", MacUtil.Format(bytes));
+        var bytes = MacUtil.Parse("AA:BB:CC:00:F5:E2");
+        Assert.Equal("AA:BB:CC:00:F5:E2", MacUtil.Format(bytes));
     }
 
     [Fact]
@@ -280,4 +280,5 @@ public class DemoDataTests
         Assert.Equal(30, h.Series("AA:BB:CC:00:00:01", "AA:BB:CC:00:00:02").Count);
     }
 }
+
 

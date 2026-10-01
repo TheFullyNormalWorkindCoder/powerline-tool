@@ -20,6 +20,8 @@ Pronađi powerline adaptere, prati pravu brzinu veze među njima i dobij obavije
 
 </div>
 
+> **Neslužbeni projekt.** Ovo je neovisan, zajednički alat. **Nije izrađen, odobren, podržan niti na bilo koji način povezan s TP-Linkom.** "TP-Link" i "tpPLC" su zaštitni znakovi njihovih vlasnika i ovdje se koriste samo da se kaže s kojim je hardverom alat kompatibilan i koji program zamjenjuje.
+
 > Sve snimke zaslona koriste `--demo` način rada (izmišljeni uređaji), pa cijelo sučelje možeš isprobati i bez adaptera.
 
 <table>
@@ -69,6 +71,39 @@ tpPLC često ne vidi adaptere koji rade, zaglavi nakon nekoliko skeniranja i tre
 | Qualcomm Atheros (AR7400 / QCA7420 / QCA7500 …) | HomePlug AV `0x88E1` | ⚠️ Napisano prema javnoj dokumentaciji, **nije testirano na pravom uređaju** |
 
 Ostali TP-Link modeli vjerojatno koriste jednu od te dvije obitelji, ali to je pretpostavka. Ako ga isprobaš na drugom adapteru, [otvori issue](https://github.com/TheFullyNormalWorkindCoder/powerline-tool/issues/new/choose) i napiši što se dogodilo.
+
+## Što je testirano (a što nije)
+
+Sve niže testirala je **jedna osoba na jednom računalu**. Sve što nije u prvoj tablici smatraj neprovjerenim.
+
+**Testno okruženje:** Windows 11 Home (build 26300), Npcap 1.89, jedan par adaptera **TP-Link TL-PA7017** (Broadcom, firmware oznaka `tpver_701E14_190426_901`), računalo spojeno na lokalni adapter preko običnog (unmanaged) switcha od 100 Mbps.
+
+| Provjereno na gornjem pravom hardveru | |
+|---|---|
+| Pronalazak lokalnog i udaljenog adaptera, čitanje firmware oznake | ✅ |
+| TX / RX brzine veze | ✅ poklapaju se s tpPLC-om unutar uobičajenih oscilacija (oko 210 u tpPLC-u prema 212 i 223 u ovom alatu, čitano u različitim trenucima) |
+| Kartice uređaja, svijetla i tamna tema prema Windowsima | ✅ |
+| Automatski uvoz imena iz verzije 1.0 | ✅ |
+| Aplikacija izgrađena iz ovog izvornog koda pokreće se i skenira | ✅ (za stvarno skeniranje korišten je običan izlaz `dotnet build`) |
+| Samostalna `.exe` | lokalno samo pokrenuta u `--demo` načinu; preuzimljivo izdanje izgradio je GitHub Actions i autor ga nije pokretao |
+
+| Testirano samo s izmišljenim podacima (`--demo`) ili jediničnim testovima | |
+|---|---|
+| Pogled Mapa i Povijest | samo demo podaci |
+| Otkrivanje promjena (uređaj nestao, pad veze, oporavak), pohrana povijesti, datoteka postavki, CSV format povijesti | jedinični testovi (52) s okvirima i vrijednostima po uzoru na snimku, ne uživo |
+
+| **Nije testirano** | |
+|---|---|
+| Qualcomm Atheros adapteri (putanja koda `0x88E1`) | nikad pokrenuto na pravom hardveru |
+| Bilo koji model osim TL-PA7017; više od dva adaptera na pravoj mreži | nije testirano |
+| Windows 10, ARM64, drugo skaliranje zaslona, druge verzije Npcapa | nije testirano |
+| Wi-Fi adapteri | namjerno preskočeni; nije testirano |
+| Obavijesti u traci, smanjivanje u traku, pokretanje uz Windowse, buđenje postojeće instance | nije testirano |
+| Gumbi za izvoz (CSV / JSON / kopiraj sažetak), cijeli dijalog postavki, *Provjeri ažuriranja* prema pravom GitHub API-ju | nije ručno testirano |
+| Hrvatsko sučelje u verziji 1.1 | prevedeno, ali nije pregledano na zaslonu |
+| *Snimaj promet* u verziji 1.1 | radilo u 1.0; nije ponovno testirano nakon prepisivanja |
+
+Primijetiš li drukčije ponašanje, [otvori issue](https://github.com/TheFullyNormalWorkindCoder/powerline-tool/issues/new/choose).
 
 ## Instalacija
 
@@ -141,6 +176,15 @@ Adapteri odgovaraju na nekoliko upravljačkih poruka poslanih kao sirovi Etherne
 - Brzine su prikazane kako ih adapter javlja (`vrijednost & 0x3FFF`). Na testiranom paru poklapaju se s tpPLC-om (oko 210 prema 212 Mbps), ali značenje gornjih bitova je pretpostavka.
 - Nema ažuriranja firmwarea, promjene lozinke, LED-a, restarta ni štednje energije. Te naredbe nisu snimljene, a alat je namjerno samo za čitanje.
 - Qualcomm putanja koda nikad nije pokrenuta na pravom adapteru.
+
+## Komponente trećih strana
+
+| Komponenta | Licenca | Napomena |
+|---|---|---|
+| [SharpPcap](https://github.com/chmorgan/sharppcap) 6.3.0 | MIT | Pristup sirovim paketima |
+| [PacketDotNet](https://github.com/dotpcap/packetnet) 1.4.7 | MPL-2.0 | Dolazi uz SharpPcap; koristi se **nepromijenjen**, izvorni kod je na poveznici |
+| .NET 8 runtime | MIT | Ugrađen u samostalnu `.exe` |
+| [Npcap](https://npcap.com) | Npcap licenca | **Nije** ugrađen; instaliraš ga sam |
 
 ## Doprinos
 
