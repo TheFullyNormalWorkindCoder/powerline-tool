@@ -5,13 +5,14 @@ using Microsoft.Win32;
 
 namespace PowerlineTool;
 
-/// <summary>Command-line switches: --demo --lang=en|hr --theme=light|dark --page=devices|map|history --minimized</summary>
-record Options(bool Demo, string Lang, string Theme, string Page, bool Minimized)
+/// <summary>Command-line switches: --demo --lang=en|hr --theme=light|dark --page=devices|map|history|settings|about --minimized --classic</summary>
+record Options(bool Demo, string Lang, string Theme, string Page, bool Minimized, bool Classic = false, string Shot = null, bool DevTools = false, string Accent = null)
 {
     public static Options Parse(string[] args)
     {
         string Value(string key) => args.FirstOrDefault(a => a.StartsWith(key + "=", StringComparison.OrdinalIgnoreCase))?[(key.Length + 1)..];
-        return new Options(args.Contains("--demo"), Value("--lang"), Value("--theme"), Value("--page"), args.Contains("--minimized"));
+        return new Options(args.Contains("--demo"), Value("--lang"), Value("--theme"), Value("--page"), args.Contains("--minimized"),
+                           args.Contains("--classic"), Value("--shot"), args.Contains("--devtools"), Value("--accent"));
     }
 }
 
@@ -36,6 +37,33 @@ static class Startup
     }
 }
 
+/// <summary>A second launch signals the first one to come forward instead of starting another scanner.</summary>
+static class SingleInstance
+{
+    public const string MutexName = "PowerlineTool.SingleInstance";
+    public const string ShowEvent = "PowerlineTool.Show";
+
+    public static void SignalFirst()
+    {
+        try { EventWaitHandle.OpenExisting(ShowEvent).Set(); } catch { }
+    }
+
+    /// <summary>Calls <paramref name="onShow"/> (on a thread-pool thread) whenever another launch asks for the window.</summary>
+    public static IDisposable Listen(Action onShow)
+    {
+        var ev = new EventWaitHandle(false, EventResetMode.AutoReset, ShowEvent);
+        var reg = ThreadPool.RegisterWaitForSingleObject(ev, (_, _) => onShow(), null, -1, false);
+        return new Handle(ev, reg);
+    }
+
+    sealed class Handle : IDisposable
+    {
+        readonly EventWaitHandle ev; readonly RegisteredWaitHandle reg;
+        public Handle(EventWaitHandle e, RegisteredWaitHandle r) { ev = e; reg = r; }
+        public void Dispose() { reg.Unregister(null); ev.Dispose(); }
+    }
+}
+
 /// <summary>Manual "check for updates": asks GitHub for the latest release. Never runs on its own.</summary>
 static class Updater
 {
@@ -55,6 +83,11 @@ static class Updater
         bool newer = Version.TryParse(tag.TrimStart('v'), out var latest) && Version.TryParse(CurrentVersion, out var cur) && latest > cur;
         return (newer, tag, url);
     }
+
+    /// <summary>Only addresses this project itself points users to are ever opened.</summary>
+    public static bool IsAllowedUrl(string url) =>
+        Uri.TryCreate(url, UriKind.Absolute, out var u) && u.Scheme == Uri.UriSchemeHttps &&
+        (u.Host == "npcap.com" || u.Host == "github.com" && u.AbsolutePath.StartsWith("/" + Repo, StringComparison.OrdinalIgnoreCase));
 
     public static void Open(string url) => Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
 }

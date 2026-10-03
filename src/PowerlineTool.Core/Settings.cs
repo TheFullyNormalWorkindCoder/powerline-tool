@@ -13,6 +13,10 @@ public class Settings
     public bool Notify { get; set; } = true;
     public bool MinimizeToTray { get; set; }
     public bool LogHistory { get; set; }
+    public string Accent { get; set; } = "teal";        // teal | blue | violet | green | orange | pink
+    public bool ReduceMotion { get; set; }
+    public bool AlwaysOnTop { get; set; }
+    public string Ui { get; set; } = "web";             // web | classic
     public int Width { get; set; } = 1040;
     public int Height { get; set; } = 700;
     public Dictionary<string, string> Names { get; set; } = new();
@@ -22,6 +26,15 @@ public class Settings
     public static string HistoryPath => Path.Combine(Dir, "history.csv");
 
     static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
+
+    /// <summary>Back to defaults for every preference. Device names and the window size are kept.</summary>
+    public void ResetPreferences()
+    {
+        var fresh = new Settings();
+        AutoRefresh = fresh.AutoRefresh; IntervalSec = fresh.IntervalSec; Theme = fresh.Theme; Language = fresh.Language;
+        WarnBelowMbps = fresh.WarnBelowMbps; Notify = fresh.Notify; MinimizeToTray = fresh.MinimizeToTray; LogHistory = fresh.LogHistory;
+        Accent = fresh.Accent; ReduceMotion = fresh.ReduceMotion; AlwaysOnTop = fresh.AlwaysOnTop; Ui = fresh.Ui;
+    }
 
     public string NameOf(string mac) => Names.TryGetValue(mac, out var n) && n.Length > 0 ? n : MacUtil.DefaultName(mac);
 

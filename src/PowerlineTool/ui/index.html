@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en" data-theme="dark" data-accent="teal">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Powerline Tool</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <div id="app">
+    <aside class="rail" id="rail" aria-label="Main navigation"></aside>
+    <main class="main">
+      <header class="top" id="top"></header>
+      <div id="banners"></div>
+      <section id="page" tabindex="-1"></section>
+    </main>
+  </div>
+
+  <div id="toasts" aria-live="polite"></div>
+  <div id="drawer" class="drawer" aria-label="Activity log"></div>
+  <div id="overlay" class="overlay" hidden></div>
+
+  <script src="i18n.js"></script>
+  <script src="charts.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

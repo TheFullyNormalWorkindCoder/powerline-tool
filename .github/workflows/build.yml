@@ -13,6 +13,12 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check the web interface scripts for syntax errors
+        run: |
+          foreach ($f in Get-ChildItem src/PowerlineTool/ui -Filter *.js) { node --check $f.FullName; if ($LASTEXITCODE -ne 0) { exit 1 } }
       - name: Build
         run: dotnet build -c Release
       - name: Test

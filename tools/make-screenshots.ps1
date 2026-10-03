@@ -1,37 +1,32 @@
-﻿# Regenerates the README screenshots from --demo mode (fake devices, no hardware needed).
+# Regenerates the README screenshots from --demo mode (fake devices, no hardware needed).
+# The app captures its own web view with --shot, so the window does not need to be in front or even visible.
 # Usage:  powershell -File tools\make-screenshots.ps1 [-Exe path\to\PowerlineTool.exe]
 param(
     [string]$Exe = (Join-Path $PSScriptRoot '..\src\PowerlineTool\bin\Release\net8.0-windows\PowerlineTool.exe'),
     [string]$Out = (Join-Path $PSScriptRoot '..\docs')
 )
 
-Add-Type -AssemblyName System.Drawing, System.Windows.Forms
-Add-Type @'
-using System; using System.Runtime.InteropServices;
-public class ShotWin {
-  [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
-  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
-  [StructLayout(LayoutKind.Sequential)] public struct RECT { public int L, T, R, B; }
-}
-'@
-
 function Shot([string]$name, [string[]]$appArgs) {
-    $p = Start-Process -FilePath $Exe -ArgumentList (@('--demo', '--lang=en') + $appArgs) -PassThru
-    Start-Sleep 5
-    [System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point(2, 2)   # keep taskbar previews out of the shot
-    $p.Refresh()
-    [ShotWin]::SetForegroundWindow($p.MainWindowHandle) | Out-Null
-    Start-Sleep 1
-    $r = New-Object ShotWin+RECT
-    [ShotWin]::GetWindowRect($p.MainWindowHandle, [ref]$r) | Out-Null
-    $bmp = New-Object System.Drawing.Bitmap ($r.R - $r.L), ($r.B - $r.T)
-    [System.Drawing.Graphics]::FromImage($bmp).CopyFromScreen($r.L, $r.T, 0, 0, $bmp.Size)
-    $bmp.Save((Join-Path $Out "$name.png"))
-    $p | Stop-Process
+    # Written to the temp folder first: synced folders (OneDrive) can briefly lock a file the app is about to create.
+    $tmp = Join-Path ([IO.Path]::GetTempPath()) "plt-shot-$name.png"
+    # The previous web view needs a moment to release its profile folder, so retry a couple of times.
+    for ($try = 1; $try -le 3; $try++) {
+        Start-Sleep -Seconds 2
+        Remove-Item -LiteralPath $tmp -ErrorAction SilentlyContinue
+        $p = Start-Process -FilePath $Exe -ArgumentList (@('--demo', '--lang=en', "--shot=$tmp") + $appArgs) -PassThru
+        if (-not $p.WaitForExit(60000)) { $p.Kill(); continue }
+        if (Test-Path -LiteralPath $tmp) {
+            Copy-Item -LiteralPath $tmp -Destination (Join-Path $Out "$name.png") -Force
+            Remove-Item -LiteralPath $tmp
+            Write-Host "wrote $name.png"
+            return
+        }
+    }
+    throw "no screenshot written: $name"
 }
 
-Shot 'screenshot'          @('--page=devices', '--theme=light')
-Shot 'screenshot-map'      @('--page=map', '--theme=light')
-Shot 'screenshot-history'  @('--page=history', '--theme=light')
-Shot 'screenshot-dark'     @('--page=devices', '--theme=dark')
-
+Shot 'screenshot'          @('--page=devices',  '--theme=dark')
+Shot 'screenshot-light'    @('--page=devices',  '--theme=light', '--accent=blue')
+Shot 'screenshot-map'      @('--page=map',      '--theme=dark')
+Shot 'screenshot-history'  @('--page=history',  '--theme=dark', '--accent=violet')
+Shot 'screenshot-settings' @('--page=settings', '--theme=light')

@@ -12,12 +12,20 @@
     <ApplicationIcon>app.ico</ApplicationIcon>
     <Product>Powerline Tool</Product>
     <AssemblyTitle>Powerline Tool</AssemblyTitle>
-    <Version>1.1.0</Version>
+    <Version>1.2.0</Version>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <!-- WebView2's package also references its WPF wrapper, which we do not use; the version clash is harmless. -->
+    <NoWarn>$(NoWarn);MSB3277</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\PowerlineTool.Core\PowerlineTool.Core.csproj" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2903.40" />
+  </ItemGroup>
+
+  <!-- The web interface is compiled into the exe; nothing is read from disk at run time. -->
+  <ItemGroup>
+    <EmbeddedResource Include="ui\**\*" Exclude="ui\**\*.md" LogicalName="ui/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
 </Project>

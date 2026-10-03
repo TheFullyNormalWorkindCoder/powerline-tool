@@ -7,28 +7,63 @@ namespace PowerlineTool.Core;
 
 public record NicInfo(LibPcapLiveDevice Device, string Name, byte[] Mac);
 
+/// <summary>Outcome of one scan: what was found, and enough context to explain an empty result.</summary>
+public class ScanResult
+{
+    public List<PlcDevice> Devices { get; set; } = new();
+    /// <summary>Wired adapters that were usable for this scan.</summary>
+    public List<string> Nics { get; set; } = new();
+    /// <summary>Why adapters were skipped, e.g. "Ethernet 2: virtual adapter".</summary>
+    public List<string> Skipped { get; set; } = new();
+    /// <summary>Machine-readable problems: npcap_missing, no_nic, no_reply, tpplc_running.</summary>
+    public List<string> Warnings { get; set; } = new();
+    public int ElapsedMs { get; set; }
+}
+
 public static class Scanner
 {
     static readonly Regex Virtual = new("VirtualBox|VMware|Hyper-V|TAP-|Virtual|VPN|Loopback|Bluetooth", RegexOptions.IgnoreCase);
 
-    /// <summary>Wired Ethernet adapters that are up. Wi-Fi, virtual and VPN adapters are skipped.</summary>
-    public static List<NicInfo> ListNics()
+    /// <summary>
+    /// Wired Ethernet adapters that are up. Wi-Fi, virtual and VPN adapters are skipped.
+    /// A fresh device list is requested every time: the cached <c>CaptureDeviceList.Instance</c> hands out the same
+    /// device objects again and again, which piles up event handlers and re-opens already used handles.
+    /// </summary>
+    public static List<NicInfo> ListNics(List<string> skipped = null)
     {
         var list = new List<NicInfo>();
-        foreach (var d in CaptureDeviceList.Instance.OfType<LibPcapLiveDevice>())
+        var all = NetworkInterface.GetAllNetworkInterfaces();
+        foreach (var d in CaptureDeviceList.New().OfType<LibPcapLiveDevice>())
         {
+            var name = d.Interface?.FriendlyName ?? d.Description ?? d.Name;
             var mac = d.Interface?.MacAddress?.GetAddressBytes();
             if (mac == null || mac.Length != 6) continue;
-            var ni = NetworkInterface.GetAllNetworkInterfaces().FirstOrDefault(n => n.GetPhysicalAddress().Equals(d.Interface.MacAddress));
-            if (ni != null)
+            // Several Windows interfaces can share a MAC (bridges, Wi-Fi Direct); prefer the one that qualifies.
+            var candidates = all.Where(n => n.GetPhysicalAddress().Equals(d.Interface.MacAddress)).ToList();
+            if (candidates.Count > 0)
             {
-                if (ni.NetworkInterfaceType != NetworkInterfaceType.Ethernet) continue;
-                if (Virtual.IsMatch(ni.Description)) continue;
-                if (ni.OperationalStatus != OperationalStatus.Up) continue;
+                var ni = candidates.FirstOrDefault(n => n.NetworkInterfaceType == NetworkInterfaceType.Ethernet && !Virtual.IsMatch(n.Description))
+                         ?? candidates[0];
+                string why = null;
+                if (ni.NetworkInterfaceType != NetworkInterfaceType.Ethernet) why = "not wired Ethernet";
+                else if (Virtual.IsMatch(ni.Description)) why = "virtual adapter";
+                else if (ni.OperationalStatus != OperationalStatus.Up) why = "link is " + ni.OperationalStatus.ToString().ToLowerInvariant();
+                if (why != null) { skipped?.Add($"{name}: {why}"); continue; }
             }
-            list.Add(new NicInfo(d, d.Interface.FriendlyName ?? d.Description ?? d.Name, mac));
+            list.Add(new NicInfo(d, name, mac));
         }
         return list;
+    }
+
+    /// <summary>Programs that talk to the same adapters and can get in each other's way.</summary>
+    public static bool OtherPlcToolRunning()
+    {
+        try
+        {
+            return System.Diagnostics.Process.GetProcessesByName("plcu").Length > 0
+                || System.Diagnostics.Process.GetProcessesByName("tpPLC").Length > 0;
+        }
+        catch { return false; }
     }
 
     /// <summary>Broadcom first; Qualcomm only if nothing answered.</summary>
@@ -39,10 +74,18 @@ public static class Scanner
     }
 
     /// <summary>Scans every suitable adapter in parallel and merges devices seen on more than one.</summary>
-    public static List<PlcDevice> ScanAll(Action<string> log)
+    public static List<PlcDevice> ScanAll(Action<string> log) => ScanAllDetailed(log).Devices;
+
+    /// <summary>Like <see cref="ScanAll"/>, but also reports which adapters were used or skipped and what looks wrong.</summary>
+    public static ScanResult ScanAllDetailed(Action<string> log)
     {
-        var nics = ListNics();
-        log($"Adapters: {string.Join(", ", nics.Select(n => n.Name))}");
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var result = new ScanResult();
+        var nics = ListNics(result.Skipped);
+        result.Nics = nics.Select(n => n.Name).ToList();
+        log($"Adapters: {(nics.Count == 0 ? "(none)" : string.Join(", ", result.Nics))}");
+        foreach (var s in result.Skipped) log($"Skipped {s}");
+
         var all = new List<PlcDevice>();
         Exception npcapMissing = null;
         Task.WaitAll(nics.Select(n => Task.Run(() =>
@@ -57,7 +100,13 @@ public static class Scanner
             catch (Exception ex) { log($"[{n.Name}] error: {ex.Message}"); }
         })).ToArray());
         if (npcapMissing != null) throw npcapMissing;
-        return Merge(all);
+
+        result.Devices = Merge(all);
+        if (nics.Count == 0) result.Warnings.Add("no_nic");
+        else if (result.Devices.Count == 0) result.Warnings.Add("no_reply");
+        if (OtherPlcToolRunning()) result.Warnings.Add("tpplc_running");
+        result.ElapsedMs = (int)sw.ElapsedMilliseconds;
+        return result;
     }
 
     public static List<PlcDevice> Merge(IEnumerable<PlcDevice> devices)

@@ -15,6 +15,7 @@ public sealed class NicSession : IDisposable
     public const ushort VS_NW_INFO = 0xA038;
 
     readonly LibPcapLiveDevice dev;
+    readonly PacketArrivalEventHandler handler;
     readonly BlockingCollection<Mme> rx = new();
     public readonly byte[] MyMac;
     public readonly string Name;
@@ -26,7 +27,7 @@ public sealed class NicSession : IDisposable
         this.dev = dev; Name = name; MyMac = mac;
         dev.Open(new DeviceConfiguration { Mode = DeviceModes.Promiscuous, ReadTimeout = 20 });
         try { dev.Filter = "ether proto 0x88e1 or ether proto 0x8912"; } catch { }
-        dev.OnPacketArrival += (_, e) =>
+        handler = (_, e) =>
         {
             var d = e.GetPacket().Data;
             if (d.Length < 17) return;
@@ -38,6 +39,7 @@ public sealed class NicSession : IDisposable
             ushort type = (ushort)(d[15] | d[16] << 8);
             rx.Add(new Mme(type, d[6..12], d[off..]));
         };
+        dev.OnPacketArrival += handler;
         dev.StartCapture();
     }
 
@@ -100,8 +102,11 @@ public sealed class NicSession : IDisposable
             dev.SendPacket(frame);
             Log($"[{Name}] -> BCM op 0x{body[1]:X2} to {MacUtil.Format(dst)} (attempt {attempt + 1})");
             var end = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+            var lastReply = DateTime.UtcNow;
             while (DateTime.UtcNow < end)
             {
+                // Broadcast: everybody answers within a few milliseconds, so stop once it has been quiet for a while.
+                if (multi && result.Count > 0 && (DateTime.UtcNow - lastReply).TotalMilliseconds > 400) break;
                 if (!rx.TryTake(out var m, 50) || m.Eth != 0x8912) continue;
                 var r = m.Raw;
                 if (r.Length < 24 || r[15] != expectOp) continue;
@@ -110,6 +115,7 @@ public sealed class NicSession : IDisposable
                 if (result.Any(x => x.AsSpan(6, 6).SequenceEqual(r.AsSpan(6, 6)))) continue;
                 Log($"[{Name}] <- BCM {MacUtil.Format(m.Src)} op 0x{r[15]:X2}");
                 result.Add(r);
+                lastReply = DateTime.UtcNow;
                 if (!multi) break;
             }
         }
@@ -118,6 +124,7 @@ public sealed class NicSession : IDisposable
 
     public void Dispose()
     {
+        try { dev.OnPacketArrival -= handler; } catch { }
         try { dev.StopCapture(); } catch { }
         try { dev.Close(); } catch { }
     }

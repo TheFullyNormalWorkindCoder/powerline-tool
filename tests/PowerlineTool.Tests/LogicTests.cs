@@ -48,6 +48,30 @@ public class ModelTests
     }
 
     [Fact]
+    public void Summary_treats_a_zero_zero_link_as_down_not_as_slow()
+    {
+        var devices = new[]
+        {
+            Make.Dev("A", new PlcLink("B", 200, 100), new PlcLink("C", 0, 0)),
+            Make.Dev("B", new PlcLink("A", 100, 200)),
+        };
+        var s = Summary.Of(devices);
+        Assert.Equal(2, s.Links);
+        Assert.Equal(1, s.DownLinks);
+        Assert.Equal(150, s.AvgMbps);        // only the live link counts
+        Assert.Equal(100, s.WeakestMbps);    // not 0
+    }
+
+    [Fact]
+    public void Summary_with_only_dead_links_reports_them_without_a_speed()
+    {
+        var s = Summary.Of(new[] { Make.Dev("A", new PlcLink("B", 0, 0)) });
+        Assert.Equal(1, s.DownLinks);
+        Assert.Equal(0, s.AvgMbps);
+        Assert.Equal("", s.WeakestFrom);
+    }
+
+    [Fact]
     public void Summary_without_links_is_empty_not_a_crash()
     {
         var s = Summary.Of(new[] { Make.Dev("A") });
@@ -253,6 +277,21 @@ public class SettingsTests
         File.WriteAllText(Path.Combine(dir, "names.json"), "{\"AA:BB\":\"Old name\"}");
         try { Assert.Equal("Old name", Settings.Load(path).NameOf("AA:BB")); }
         finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public void Reset_restores_preferences_but_keeps_names_and_window_size()
+    {
+        var s = new Settings { Theme = "dark", Accent = "pink", AutoRefresh = true, AlwaysOnTop = true, WarnBelowMbps = 200, Width = 1500, Height = 900 };
+        s.Names["AA:BB"] = "Kitchen";
+        s.ResetPreferences();
+        Assert.Equal("system", s.Theme);
+        Assert.Equal("teal", s.Accent);
+        Assert.False(s.AutoRefresh);
+        Assert.False(s.AlwaysOnTop);
+        Assert.Equal(50, s.WarnBelowMbps);
+        Assert.Equal("Kitchen", s.NameOf("AA:BB"));
+        Assert.Equal(1500, s.Width);
     }
 
     [Fact]

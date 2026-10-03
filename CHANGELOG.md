@@ -2,6 +2,27 @@
 
 All notable changes to this project. Format based on [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
+## [1.2.0] - 2026-10-03
+
+### Added
+- **New interface** (HTML/CSS/JS shown in a WebView2 window): sidebar navigation, health gauge with summary, device cards with animated TX/RX bars and sparklines, animated **network map**, interactive **history chart** (hover tooltip, range buttons, min/avg/max), light and dark themes, six accent colours, English and Croatian, responsive layout, reduced-motion option.
+- **Memory between scans:** an adapter that stops answering stays listed as "not seen" for three scans instead of vanishing after one lost reply. Last known link speeds are kept when a reply with the speeds is lost.
+- **Automatic retry:** an empty scan after adapters were seen is repeated once before it is believed.
+- **Clear states for what is actually wrong:** "only the local adapter answers", "partner not answering" (listed by the local adapter but 0/0), no wired card, Npcap missing, tpPLC running at the same time. A 0/0 link is shown as "no link", not as "0 Mbps, poor", and no longer drags the average down.
+- Command palette (`Ctrl+K` or `/`), pause/resume auto-refresh, quick theme switch, always-on-top, sort cards, expand/collapse all, copy summary, save history of a link as CSV, **diagnostics for a bug report** (copy or save, MAC addresses shortened), test notification, reset settings.
+- `--classic` starts the previous Windows-style window; it is also used automatically if WebView2 is not available. New switches: `--accent`, `--shot`, `--devtools`.
+- Tests for device memory, the scan coordinator, the UI state JSON and the new summary rules (70 in total).
+
+### Changed
+- Scanning logic moved out of the window into `ScanCoordinator` (Core), shared by both interfaces.
+- Each scan gets fresh capture devices, and event handlers are removed when a scan ends. Before, they piled up on the cached device objects.
+- The broadcast discovery ends 400 ms after the last reply instead of waiting the full time, so a scan takes about 0.6 s instead of 1.5 s.
+- The page cannot reach the network at all (Content-Security-Policy) and may only open GitHub and npcap.com links.
+
+### Fixed
+- A scan that found only some adapters on the first try used to blank the whole list on the next empty reply.
+- Log lines written from scanner threads could crash the web window ("WebView2 can only be accessed from the UI thread").
+
 ## [1.1.0] - 2026-10-01
 
 ### Added
